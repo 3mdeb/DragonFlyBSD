@@ -31,6 +31,7 @@
 #include <Guid/HobList.h>
 #include <Guid/Mps.h>
 #include <Guid/SmBios.h>
+#include <Guid/SystemResourceTable.h>
 #include <Protocol/BlockIo.h>
 #include <Protocol/GraphicsOutput.h>
 #include <Protocol/NetworkInterfaceIdentifier.h>

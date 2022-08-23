@@ -48,6 +48,21 @@ efi_get_table(EFI_GUID *tbl)
 	return (NULL);
 }
 
+void
+efi_set_table(EFI_GUID *tbl, void *value)
+{
+	EFI_GUID *id;
+	unsigned int i;
+
+	for (i = 0; i < ST->NumberOfTableEntries; i++) {
+		id = &ST->ConfigurationTable[i].VendorGuid;
+		if (!memcmp(id, tbl, sizeof(EFI_GUID))) {
+			ST->ConfigurationTable[i].VendorTable = value;
+			return;
+		}
+	}
+}
+
 EFI_STATUS
 OpenProtocolByHandle(EFI_HANDLE handle, EFI_GUID *protocol, void **interface)
 {

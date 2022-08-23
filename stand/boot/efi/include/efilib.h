@@ -65,6 +65,7 @@ struct efi_devdesc
 };
 
 void *efi_get_table(EFI_GUID *tbl);
+void efi_set_table(EFI_GUID *tbl, void *value);
 
 int efi_register_handles(struct devsw *, EFI_HANDLE *, EFI_HANDLE *, int);
 EFI_HANDLE efi_find_handle(struct devsw *, int);

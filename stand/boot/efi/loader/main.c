@@ -64,6 +64,7 @@ EFI_GUID memtype = MEMORY_TYPE_INFORMATION_TABLE_GUID;
 EFI_GUID debugimg = EFI_DEBUG_IMAGE_INFO_TABLE_GUID;
 EFI_GUID fdtdtb = FDT_TABLE_GUID;
 EFI_GUID inputid = SIMPLE_INPUT_PROTOCOL;
+EFI_GUID esrtid = EFI_SYSTEM_RESOURCE_TABLE_GUID;
 
 /*
  * Need this because EFI uses UTF-16 unicode string constants, but we
@@ -193,6 +194,7 @@ main(int argc, CHAR16 *argv[])
 	EFI_GUID *guid;
 	int i, j, vargood, unit, howto;
 	struct devsw *dev;
+	EFI_SYSTEM_RESOURCE_TABLE *esrt;
 	uint64_t pool_guid;
 	UINTN k;
 	int has_kbd;
@@ -338,6 +340,30 @@ main(int argc, CHAR16 *argv[])
 	printf("\n");
 	printf("%s, Revision %s\n", bootprog_name, bootprog_rev);
 	printf("(%s, %s)\n", bootprog_maker, bootprog_date);
+
+	esrt = efi_get_table(&esrtid);
+	if (esrt != NULL && esrt->FwResourceVersion ==
+	    EFI_SYSTEM_RESOURCE_TABLE_FIRMWARE_RESOURCE_VERSION) {
+		size_t esrt_size = sizeof(*esrt) +
+		    esrt->FwResourceCount * sizeof(EFI_SYSTEM_RESOURCE_ENTRY);
+
+		void *esrt_copy;
+
+		/*
+		 * Copy table from memory of type EfiBootServicesData to
+		 * something that isn't erased after ExitBootServices().  Using
+		 * EfiRuntimeServicesData because EfiLoaderData memory isn't
+		 * preserved either.
+		 */
+		EFI_STATUS status = BS->AllocatePool(EfiRuntimeServicesData,
+		    esrt_size, &esrt_copy);
+		if (status == EFI_SUCCESS) {
+			memcpy(esrt_copy, esrt, esrt_size);
+			efi_set_table(&esrtid, esrt_copy);
+		} else {
+			printf("BS->AllocatePool() has failed");
+		}
+	}
 
 	/*
 	 * Disable the watchdog timer. By default the boot manager sets
