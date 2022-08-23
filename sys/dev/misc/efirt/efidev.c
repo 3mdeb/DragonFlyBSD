@@ -36,6 +36,8 @@
 #include <sys/module.h>
 #include <sys/device.h>
 
+//#include <stdlib.h>
+
 #include <machine/efi.h>
 #include <sys/efiio.h>
 

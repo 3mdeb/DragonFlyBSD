@@ -42,8 +42,11 @@
 #include <sys/sched.h>
 #include <sys/sysctl.h>
 #include <sys/systm.h>
+#include <sys/uio.h>
 #include <sys/thread.h>
 #include <sys/globaldata.h>
+
+//#include <stdlib.h>
 
 #include <vm/vm.h>
 #include <vm/pmap.h>
@@ -62,9 +65,14 @@
 #include <machine/smp.h>
 #include <machine/vmparam.h>
 
+#define EFI_TABLE_ALLOC_MAX 0x800000
+
 static struct efi_systbl *efi_systbl;
 static struct efi_cfgtbl *efi_cfgtbl;
 static struct efi_rt *efi_runtime;
+//static struct efi_esrt_table *esrt;
+
+//static uuid_t esrt_guid = EFI_TABLE_ESRT;
 
 static int efi_status2err[25] = {
 	0,		/* EFI_SUCCESS */
@@ -374,6 +382,7 @@ efi_init(void)
 	struct efi_md *map;
 	caddr_t kmdp;
 	size_t efisz;
+	//struct efi_esrt_table *esrt = NULL;
 
 	lockinit(&efi_lock, "efi", 0, LK_CANRECURSE);
 	lockinit(&resettodr_lock, "efitodr", 0, LK_CANRECURSE);
@@ -428,6 +437,20 @@ efi_init(void)
 		return (ENXIO);
 	}
 
+	//kprintf("\nESRT debug 2:\n");
+	int error;
+
+	struct efi_esrt_table *esrt = NULL;
+	struct uuid uuid_s = EFI_TABLE_ESRT;
+	
+	kprintf("esrt: %p. uuid: %p \n", (void **)&esrt, &uuid_s);
+	//kprintf("uuid: %p \n", &uuid_s);
+
+	error = efi_get_table(&uuid_s, (void **)&esrt);
+	//kprintf("esrt entries: %hhn\n", esrt->entries);
+
+	
+
 	return (0);
 }
 
@@ -449,19 +472,147 @@ efi_get_table(struct uuid *uuid, void **ptr)
 {
 	struct efi_cfgtbl *ct;
 	u_long count;
-
+	kprintf("efi_get_table..\n");
 	if (efi_cfgtbl == NULL)
 		return (ENXIO);
+
+	kprintf("efi_cfgtbl != NULL\n");
 	count = efi_systbl->st_entries;
+	kprintf("count=%ld\n", count);
 	ct = efi_cfgtbl;
 	while (count--) {
 		if (!bcmp(&ct->ct_uuid, uuid, sizeof(*uuid))) {
 			*ptr = (void *)PHYS_TO_DMAP(ct->ct_data);
+			kprintf("while count %ld\n", count);
 			return (0);
 		}
 		ct++;
 	}
 	return (ENOENT);
+}
+
+int
+get_table_length(enum efi_table_type type, size_t *table_len, void **taddr)
+{
+	switch (type) {
+	case TYPE_ESRT:
+	{
+		struct efi_esrt_table *esrt = NULL;
+		struct uuid uuid = EFI_TABLE_ESRT;
+		uint32_t fw_resource_count = 0;
+		size_t len = sizeof(*esrt);
+		int error;
+		void *buf;
+
+		error = efi_get_table(&uuid, (void **)&esrt);
+		if (error != 0)
+			return (error);
+
+		buf = kmalloc(len, M_TEMP, M_WAITOK);
+		//Temporary solution - maybe copyout instead of physcopyout
+		//error = physcopyout((vm_paddr_t)esrt, buf, len);
+		error = 0;
+
+
+		if (error != 0) {
+			//Temporary solution
+			kfree(buf, M_TEMP);
+			return (error);
+		}
+
+		/* Check ESRT version */
+		if (((struct efi_esrt_table *)buf)->fw_resource_version !=
+		    ESRT_FIRMWARE_RESOURCE_VERSION) {
+			//Temporary solution
+			kfree(buf, M_TEMP);
+			return (ENODEV);
+		}
+
+		fw_resource_count = ((struct efi_esrt_table *)buf)->
+		    fw_resource_count;
+		if (fw_resource_count > EFI_TABLE_ALLOC_MAX /
+		    sizeof(struct efi_esrt_entry_v1)) {
+			kfree(buf, M_TEMP);
+			return (ENOMEM);
+		}
+
+		len += fw_resource_count * sizeof(struct efi_esrt_entry_v1);
+		*table_len = len;
+
+		if (taddr != NULL)
+			*taddr = esrt;
+		kfree(buf, M_TEMP);
+		return (0);
+	}
+	case TYPE_PROP:
+	{
+		struct uuid uuid = EFI_PROPERTIES_TABLE;
+		struct efi_prop_table *prop;
+		size_t len = sizeof(*prop);
+		uint32_t prop_len;
+		int error;
+		void *buf;
+
+		error = efi_get_table(&uuid, (void **)&prop);
+		if (error != 0)
+			return (error);
+
+		buf = kmalloc(len, M_TEMP, M_WAITOK);
+		//error = physcopyout((vm_paddr_t)prop, buf, len);
+		if (error != 0) {
+			kfree(buf, M_TEMP);
+			return (error);
+		}
+
+		prop_len = ((struct efi_prop_table *)buf)->length;
+		if (prop_len > EFI_TABLE_ALLOC_MAX) {
+			kfree(buf, M_TEMP);
+			return (ENOMEM);
+		}
+		*table_len = prop_len;
+
+		if (taddr != NULL)
+			*taddr = prop;
+		kfree(buf, M_TEMP);
+		return (0);
+	}
+	}
+	return (ENOENT);
+}
+
+int
+efi_copy_table(struct uuid *uuid, void **buf, size_t buf_len, size_t *table_len)
+{
+	static const struct known_table {
+		struct uuid uuid;
+		enum efi_table_type type;
+	} tables[] = {
+		{ EFI_TABLE_ESRT,       TYPE_ESRT },
+		{ EFI_PROPERTIES_TABLE, TYPE_PROP }
+	};
+	size_t table_idx;
+	void *taddr;
+	int rc;
+
+	for (table_idx = 0; table_idx < nitems(tables); table_idx++) {
+		if (!bcmp(&tables[table_idx].uuid, uuid, sizeof(*uuid)))
+			break;
+	}
+
+	if (table_idx == nitems(tables))
+		return (EINVAL);
+
+	rc = get_table_length(tables[table_idx].type, table_len, &taddr);
+	if (rc != 0)
+		return rc;
+
+	/* return table length to userspace */
+	if (buf == NULL)
+		return (0);
+
+	*buf = kmalloc(*table_len, M_TEMP, M_WAITOK);
+	//rc = physcopyout((vm_paddr_t)taddr, *buf, *table_len);
+	return (rc);
 }
 
 int

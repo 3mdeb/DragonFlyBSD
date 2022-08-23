@@ -43,7 +43,15 @@
 struct uuid;
 struct efi_tm;
 
+enum efi_table_type {
+	TYPE_ESRT = 0,
+	TYPE_PROP
+};
+
 int efi_get_table(struct uuid *uuid, void **ptr);
+int efi_copy_table(struct uuid *uuid, void **buf, size_t buf_len,
+	size_t *table_len);
+int get_table_length(enum efi_table_type type, size_t *table_len, void **taddr);
 int efi_get_time(struct efi_tm *tm);
 int efi_get_time_locked(struct efi_tm *tm);
 int efi_reset_system(void);

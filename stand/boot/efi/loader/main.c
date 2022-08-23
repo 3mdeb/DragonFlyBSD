@@ -64,6 +64,7 @@ EFI_GUID memtype = MEMORY_TYPE_INFORMATION_TABLE_GUID;
 EFI_GUID debugimg = EFI_DEBUG_IMAGE_INFO_TABLE_GUID;
 EFI_GUID fdtdtb = FDT_TABLE_GUID;
 EFI_GUID inputid = SIMPLE_INPUT_PROTOCOL;
+EFI_GUID esrt_guid = EFI_TABLE_ESRT;
 
 /*
  * Need this because EFI uses UTF-16 unicode string constants, but we
@@ -338,6 +339,12 @@ main(int argc, CHAR16 *argv[])
 	printf("\n");
 	printf("%s, Revision %s\n", bootprog_name, bootprog_rev);
 	printf("(%s, %s)\n", bootprog_maker, bootprog_date);
+
+	printf("ESRT: \n");
+	struct efi_esrt_table *esrt;
+
+	esrt = efi_get_table(&esrt_guid);
+	printf("esrt get table done.\n");
 
 	/*
 	 * Disable the watchdog timer. By default the boot manager sets

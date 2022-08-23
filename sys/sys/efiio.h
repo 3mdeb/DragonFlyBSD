@@ -37,6 +37,8 @@ struct efi_get_table_ioc
 {
 	struct uuid uuid;	/* UUID to look up */
 	void *ptr;		/* Pointer to table in KVA space */
+	size_t table_len;	/* Table size */
+	size_t buf_len;		/* Size of the buffer */
 };
 
 struct efi_var_ioc

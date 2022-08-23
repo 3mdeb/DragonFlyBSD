@@ -80,6 +80,8 @@ static void (*trampoline)(uint64_t stack, void *copy_finish, uint64_t kernend,
 extern uintptr_t amd64_tramp;
 extern uint32_t amd64_tramp_size;
 
+static EFI_GUID esrt_guid = EFI_TABLE_ESRT;
+
 /*
  * There is an ELF kernel and one or more ELF modules loaded.
  * We wish to start executing the kernel image, so make such
@@ -95,6 +97,16 @@ elf64_exec(struct preloaded_file *fp)
 	ACPI_TABLE_RSDP		*rsdp;
 	char			buf[24];
 	int			revision;
+
+	/* ESRT debug  */
+	
+	printf("esrt debug...\n");
+	struct efi_esrt_table *esrt;
+	
+	esrt = efi_get_table(&esrt_guid);
+	printf("esrt get table done\n");
+	
+	/* end */
 
 	rsdp = efi_get_table(&acpi20_guid);
 	if (rsdp == NULL) {
