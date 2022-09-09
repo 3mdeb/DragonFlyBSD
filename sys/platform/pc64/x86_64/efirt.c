@@ -391,7 +391,7 @@ efi_init(void)
 		return (ENXIO);
 	}
 	efi_cfgtbl = (efi_systbl->st_cfgtbl == 0) ? NULL :
-	    (struct efi_cfgtbl *)efi_systbl->st_cfgtbl;
+	    (struct efi_cfgtbl *)PHYS_TO_DMAP(efi_systbl->st_cfgtbl);
 	if (efi_cfgtbl == NULL) {
 		if (bootverbose)
 			kprintf("EFI config table is not present\n");
