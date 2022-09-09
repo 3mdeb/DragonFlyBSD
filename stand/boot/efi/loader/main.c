@@ -191,6 +191,38 @@ out:
 	return retval;
 }
 
+struct efi_esrt_table {
+	uint32_t	fw_resource_count;
+	uint32_t	fw_resource_count_max;
+	uint64_t	fw_resource_version;
+	uint8_t		entries[];
+};
+
+struct efi_esrt_entry_v1 {
+	struct uuid	fw_class;
+	uint32_t 	fw_type;
+	uint32_t	fw_version;
+	uint32_t	lowest_supported_fw_version;
+	uint32_t	capsule_flags;
+	uint32_t	last_attempt_version;
+	uint32_t	last_attempt_status;
+};
+
+static void
+efi_set_table(EFI_GUID *tbl, void *value)
+{
+	EFI_GUID *id;
+	unsigned int i;
+
+	for (i = 0; i < ST->NumberOfTableEntries; i++) {
+		id = &ST->ConfigurationTable[i].VendorGuid;
+		if (!memcmp(id, tbl, sizeof(EFI_GUID))) {
+			ST->ConfigurationTable[i].VendorTable = value;
+			return;
+		}
+	}
+}
+
 EFI_STATUS
 main(int argc, CHAR16 *argv[])
 {
@@ -349,7 +381,26 @@ main(int argc, CHAR16 *argv[])
 	struct efi_esrt_table *esrt;
 
 	esrt = efi_get_table(&esrt_guid);
-	printf("esrt get table done.\n");
+	printf("  esrt get table done: %p\n", esrt);
+
+	if (esrt != NULL) {
+		size_t esrt_size = sizeof(*esrt) +
+			esrt->fw_resource_count * sizeof(struct efi_esrt_entry_v1);
+
+		void *esrt_copy;
+
+		/*
+		 * Using EfiRuntimeServicesData as it maps to BIOS_MAP_RES,
+		 * while EfiLoaderData becomes BIOS_MAP_FREE.
+		 */
+		EFI_STATUS status = BS->AllocatePool(EfiRuntimeServicesData,
+								  esrt_size, &esrt_copy);
+		if (status != EFI_SUCCESS)
+			printf("BS->AllocatePool() has failed");
+
+		memcpy(esrt_copy, esrt, esrt_size);
+		efi_set_table(&esrt_guid, esrt_copy);
+	}
 
 	/*
 	 * Disable the watchdog timer. By default the boot manager sets
