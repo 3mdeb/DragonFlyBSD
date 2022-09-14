@@ -441,14 +441,28 @@ efi_init(void)
 	int error;
 
 	struct efi_esrt_table *esrt = NULL;
+	struct efi_esrt_entry_v1 *esrt_entries;
 	struct uuid uuid_s = EFI_TABLE_ESRT;
 	
-	kprintf("esrt: %p. uuid: %p \n", (void **)&esrt, &uuid_s);
-	//kprintf("uuid: %p \n", &uuid_s);
-
 	error = efi_get_table(&uuid_s, (void **)&esrt);
-	//kprintf("esrt entries: %hhn\n", esrt->entries);
 
+	kprintf("esrt->fw_resource_count = %d\n", esrt->fw_resource_count);
+	kprintf("esrt->fw_resource_count_max = %d\n", esrt->fw_resource_count_max);
+	kprintf("esrt->fw_resource_version = %ld\n", esrt->fw_resource_version);
+
+	esrt_entries = (struct efi_esrt_entry_v1 *) esrt->entries;
+
+	for (int i = 0; i < esrt->fw_resource_count; ++i) {
+		const struct efi_esrt_entry_v1 *e = &esrt_entries[i];
+
+		kprintf("ESRT[%d]:\n", i);
+		kprintf("  Fw Type: 0x%08x\n", e->fw_type);
+		kprintf("  Fw Version: 0x%08x\n", e->fw_version);
+		kprintf("  Lowest Supported Fw Version: 0x%08x\n", e->lowest_supported_fw_version);
+		kprintf("  Capsule Flags: 0x%08x\n", e->capsule_flags);
+		kprintf("  Last Attempt Version: 0x%08x\n", e->last_attempt_version);
+		kprintf("  Last Attempt Status: 0x%08x\n", e->last_attempt_status);
+	}
 	
 
 	return (0);
@@ -472,18 +486,14 @@ efi_get_table(struct uuid *uuid, void **ptr)
 {
 	struct efi_cfgtbl *ct;
 	u_long count;
-	kprintf("efi_get_table..\n");
 	if (efi_cfgtbl == NULL)
 		return (ENXIO);
 
-	kprintf("efi_cfgtbl != NULL\n");
 	count = efi_systbl->st_entries;
-	kprintf("count=%ld\n", count);
 	ct = efi_cfgtbl;
 	while (count--) {
 		if (!bcmp(&ct->ct_uuid, uuid, sizeof(*uuid))) {
 			*ptr = (void *)PHYS_TO_DMAP(ct->ct_data);
-			kprintf("while count %ld\n", count);
 			return (0);
 		}
 		ct++;
