@@ -46,8 +46,6 @@
 #include <sys/thread.h>
 #include <sys/globaldata.h>
 
-//#include <stdlib.h>
-
 #include <vm/vm.h>
 #include <vm/pmap.h>
 #include <vm/vm_map.h>
@@ -66,13 +64,11 @@
 #include <machine/vmparam.h>
 
 #define EFI_TABLE_ALLOC_MAX 0x800000
+#define MAX_STR		    128
 
 static struct efi_systbl *efi_systbl;
 static struct efi_cfgtbl *efi_cfgtbl;
 static struct efi_rt *efi_runtime;
-//static struct efi_esrt_table *esrt;
-
-//static uuid_t esrt_guid = EFI_TABLE_ESRT;
 
 static int efi_status2err[25] = {
 	0,		/* EFI_SUCCESS */
@@ -382,7 +378,6 @@ efi_init(void)
 	struct efi_md *map;
 	caddr_t kmdp;
 	size_t efisz;
-	//struct efi_esrt_table *esrt = NULL;
 
 	lockinit(&efi_lock, "efi", 0, LK_CANRECURSE);
 	lockinit(&resettodr_lock, "efitodr", 0, LK_CANRECURSE);
@@ -437,7 +432,6 @@ efi_init(void)
 		return (ENXIO);
 	}
 
-	//kprintf("\nESRT debug 2:\n");
 	int error;
 
 	struct efi_esrt_table *esrt = NULL;
@@ -452,6 +446,8 @@ efi_init(void)
 
 	esrt_entries = (struct efi_esrt_entry_v1 *) esrt->entries;
 
+	char esrt_entry_prefix[12];
+
 	for (int i = 0; i < esrt->fw_resource_count; ++i) {
 		const struct efi_esrt_entry_v1 *e = &esrt_entries[i];
 
@@ -462,6 +458,44 @@ efi_init(void)
 		kprintf("  Capsule Flags: 0x%08x\n", e->capsule_flags);
 		kprintf("  Last Attempt Version: 0x%08x\n", e->last_attempt_version);
 		kprintf("  Last Attempt Status: 0x%08x\n", e->last_attempt_status);
+		
+		/* ESRT values to char* */
+		char fw_type[9];
+		char fw_version[9];
+		char fw_lowest_supported_fw_version[9];
+		char fw_capsule_flags[9];
+		char fw_last_attempt_version[9];
+		char fw_last_attempt_status[9];
+
+		ksprintf(esrt_entry_prefix, "esrt.entry%d", i);
+		
+		ksprintf(fw_type, "%08x", e->fw_type);
+		ksprintf(fw_version, "%08x", e->fw_version);
+		ksprintf(fw_lowest_supported_fw_version, "%08x", e->lowest_supported_fw_version);
+		ksprintf(fw_capsule_flags, "%08x", e->capsule_flags);
+		ksprintf(fw_last_attempt_version, "%08x", e->last_attempt_version);
+		ksprintf(fw_last_attempt_status, "%08x", e->last_attempt_status);
+
+		char str_type[MAX_STR];
+		char str_version[MAX_STR];
+		char str_lowest_supported_fw_version[MAX_STR];
+		char str_capsule_flags[MAX_STR];
+		char str_last_attempt_version[MAX_STR];
+		char str_last_attempt_status[MAX_STR];
+
+		ksprintf(str_type, "%s.fw_type", esrt_entry_prefix);
+		ksprintf(str_version, "%s.fw_version", esrt_entry_prefix);
+		ksprintf(str_lowest_supported_fw_version, "%s.lowest_supported_fw_version", esrt_entry_prefix);
+		ksprintf(str_capsule_flags, "%s.capsule_flags", esrt_entry_prefix);
+		ksprintf(str_last_attempt_version, "%s.last_attempt_version", esrt_entry_prefix);
+		ksprintf(str_last_attempt_status, "%s.last_attempt_status", esrt_entry_prefix);
+
+		ksetenv(str_type, fw_type);
+		ksetenv(str_version, fw_version);
+		ksetenv(str_lowest_supported_fw_version, fw_lowest_supported_fw_version);
+		ksetenv(str_capsule_flags, fw_capsule_flags);
+		ksetenv(str_last_attempt_version, fw_last_attempt_version);
+		ksetenv(str_last_attempt_status, fw_last_attempt_status);
 	}
 	
 
