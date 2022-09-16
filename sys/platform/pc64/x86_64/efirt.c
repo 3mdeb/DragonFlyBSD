@@ -63,6 +63,8 @@
 #include <machine/smp.h>
 #include <machine/vmparam.h>
 
+#include <uuid.h>
+
 #define EFI_TABLE_ALLOC_MAX 0x800000
 #define MAX_STR		    128
 
@@ -452,16 +454,12 @@ efi_init(void)
 		const struct efi_esrt_entry_v1 *e = &esrt_entries[i];
 		
 		char fw_class[MAX_STR];
-		kprintf("SIZEOF: %ld", sizeof(e->fw_class));
-		kprintf(" / %ld\n", sizeof(&e->fw_class));
 
-		ksprintf(fw_class, "%08x-%04x-%04x-%02x-%02x-", e->fw_class.time_low,
-				e->fw_class.time_mid, e->fw_class.time_hi_and_version,
-				e->fw_class.clock_seq_hi_and_reserved, e->fw_class.clock_seq_low);
-
-		for (int j = 0; i < _UUID_NODE_LEN; j++) {
-			ksprintf(fw_class, "%s%02x", fw_class, e->fw_class.node[j]);
-		}                                                                                           
+		ksprintf(fw_class, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+				e->fw_class.time_low, e->fw_class.time_mid, e->fw_class.time_hi_and_version,
+				e->fw_class.clock_seq_hi_and_reserved, e->fw_class.clock_seq_low, e->fw_class.node[0],
+				e->fw_class.node[1], e->fw_class.node[2], e->fw_class.node[3], e->fw_class.node[4],
+				e->fw_class.node[5]);
 
 		kprintf("ESRT[%d]:\n", i);
 		kprintf("  Fw Type: 0x%08x\n", e->fw_type);
