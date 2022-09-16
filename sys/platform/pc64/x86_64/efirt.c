@@ -450,9 +450,22 @@ efi_init(void)
 
 	for (int i = 0; i < esrt->fw_resource_count; ++i) {
 		const struct efi_esrt_entry_v1 *e = &esrt_entries[i];
+		
+		char fw_class[MAX_STR];
+		kprintf("SIZEOF: %ld", sizeof(e->fw_class));
+		kprintf(" / %ld\n", sizeof(&e->fw_class));
+
+		ksprintf(fw_class, "%08x-%04x-%04x-%02x-%02x-", e->fw_class.time_low,
+				e->fw_class.time_mid, e->fw_class.time_hi_and_version,
+				e->fw_class.clock_seq_hi_and_reserved, e->fw_class.clock_seq_low);
+
+		for (int j = 0; i < _UUID_NODE_LEN; j++) {
+			ksprintf(fw_class, "%s%02x", fw_class, e->fw_class.node[j]);
+		}                                                                                           
 
 		kprintf("ESRT[%d]:\n", i);
 		kprintf("  Fw Type: 0x%08x\n", e->fw_type);
+		kprintf("  Fw Class: %s\n", fw_class);
 		kprintf("  Fw Version: 0x%08x\n", e->fw_version);
 		kprintf("  Lowest Supported Fw Version: 0x%08x\n", e->lowest_supported_fw_version);
 		kprintf("  Capsule Flags: 0x%08x\n", e->capsule_flags);
@@ -477,6 +490,7 @@ efi_init(void)
 		ksprintf(fw_last_attempt_status, "%08x", e->last_attempt_status);
 
 		char str_type[MAX_STR];
+		char str_class[MAX_STR];
 		char str_version[MAX_STR];
 		char str_lowest_supported_fw_version[MAX_STR];
 		char str_capsule_flags[MAX_STR];
@@ -484,6 +498,7 @@ efi_init(void)
 		char str_last_attempt_status[MAX_STR];
 
 		ksprintf(str_type, "%s.fw_type", esrt_entry_prefix);
+		ksprintf(str_class, "%s.fw_class", esrt_entry_prefix);
 		ksprintf(str_version, "%s.fw_version", esrt_entry_prefix);
 		ksprintf(str_lowest_supported_fw_version, "%s.lowest_supported_fw_version", esrt_entry_prefix);
 		ksprintf(str_capsule_flags, "%s.capsule_flags", esrt_entry_prefix);
@@ -491,6 +506,7 @@ efi_init(void)
 		ksprintf(str_last_attempt_status, "%s.last_attempt_status", esrt_entry_prefix);
 
 		ksetenv(str_type, fw_type);
+		ksetenv(str_class, fw_class);
 		ksetenv(str_version, fw_version);
 		ksetenv(str_lowest_supported_fw_version, fw_lowest_supported_fw_version);
 		ksetenv(str_capsule_flags, fw_capsule_flags);
