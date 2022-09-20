@@ -442,10 +442,6 @@ efi_init(void)
 	
 	error = efi_get_table(&uuid_s, (void **)&esrt);
 
-	kprintf("esrt->fw_resource_count = %d\n", esrt->fw_resource_count);
-	kprintf("esrt->fw_resource_count_max = %d\n", esrt->fw_resource_count_max);
-	kprintf("esrt->fw_resource_version = %ld\n", esrt->fw_resource_version);
-
 	esrt_entries = (struct efi_esrt_entry_v1 *) esrt->entries;
 
 	char esrt_entry_prefix[12];
@@ -461,15 +457,6 @@ efi_init(void)
 				e->fw_class.node[1], e->fw_class.node[2], e->fw_class.node[3], e->fw_class.node[4],
 				e->fw_class.node[5]);
 
-		kprintf("ESRT[%d]:\n", i);
-		kprintf("  Fw Type: 0x%08x\n", e->fw_type);
-		kprintf("  Fw Class: %s\n", fw_class);
-		kprintf("  Fw Version: 0x%08x\n", e->fw_version);
-		kprintf("  Lowest Supported Fw Version: 0x%08x\n", e->lowest_supported_fw_version);
-		kprintf("  Capsule Flags: 0x%08x\n", e->capsule_flags);
-		kprintf("  Last Attempt Version: 0x%08x\n", e->last_attempt_version);
-		kprintf("  Last Attempt Status: 0x%08x\n", e->last_attempt_status);
-		
 		/* ESRT values to char* */
 		char fw_type[9];
 		char fw_version[9];
