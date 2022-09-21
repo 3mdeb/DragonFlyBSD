@@ -35,6 +35,7 @@ SUBDIR= 802_11 \
 	efibootmgr \
 	efidp \
 	efisetup \
+	efitable \
 	efivar \
 	fdcontrol \
 	fdformat \

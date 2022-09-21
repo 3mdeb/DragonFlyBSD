@@ -67,6 +67,8 @@
 
 #define EFI_TABLE_ALLOC_MAX 0x800000
 
+#define MAX_STR 128
+
 static struct efi_systbl *efi_systbl;
 static struct efi_cfgtbl *efi_cfgtbl;
 static struct efi_rt *efi_runtime;
@@ -122,6 +124,53 @@ static vm_object_t efi_obj;
 static struct efi_md *efi_map;
 static int efi_ndesc;
 static int efi_descsz;
+
+/* Temporary added here to hotfix missing symbol error */
+#define	PHYS_PAGE_COUNT(len)	(howmany(len, PAGE_SIZE) + 1)
+
+int
+physcopyin(void *src, vm_paddr_t dst, size_t len)
+{
+	vm_page_t m[PHYS_PAGE_COUNT(len)];
+	struct iovec iov[1];
+	struct uio uio;
+	int i;
+
+	iov[0].iov_base = src;
+	iov[0].iov_len = len;
+	uio.uio_iov = iov;
+	uio.uio_iovcnt = 1;
+	uio.uio_offset = 0;
+	uio.uio_resid = len;
+	uio.uio_segflg = UIO_SYSSPACE;
+	uio.uio_rw = UIO_WRITE;
+	for (i = 0; i < PHYS_PAGE_COUNT(len); i++, dst += PAGE_SIZE)
+		m[i] = PHYS_TO_VM_PAGE(dst);
+	return (uiomove_fromphys(m, dst & PAGE_MASK, len, &uio));
+}
+
+int
+physcopyout(vm_paddr_t src, void *dst, size_t len)
+{
+	vm_page_t m[PHYS_PAGE_COUNT(len)];
+	struct iovec iov[1];
+	struct uio uio;
+	int i;
+
+	iov[0].iov_base = dst;
+	iov[0].iov_len = len;
+	uio.uio_iov = iov;
+	uio.uio_iovcnt = 1;
+	uio.uio_offset = 0;
+	uio.uio_resid = len;
+	uio.uio_segflg = UIO_SYSSPACE;
+	uio.uio_rw = UIO_READ;
+	for (i = 0; i < PHYS_PAGE_COUNT(len); i++, src += PAGE_SIZE)
+		m[i] = PHYS_TO_VM_PAGE(src);
+	return (uiomove_fromphys(m, src & PAGE_MASK, len, &uio));
+}
+
+#undef PHYS_PAGE_COUNT
 
 static void
 efi_destroy_1t1_map(void)
@@ -437,7 +486,6 @@ efi_init(void)
 		return (ENXIO);
 	}
 
-	//kprintf("\nESRT debug 2:\n");
 	int error;
 
 	struct efi_esrt_table *esrt = NULL;
@@ -455,8 +503,17 @@ efi_init(void)
 	for (int i = 0; i < esrt->fw_resource_count; ++i) {
 		const struct efi_esrt_entry_v1 *e = &esrt_entries[i];
 
+		char fw_class[MAX_STR];
+
+		ksprintf(fw_class, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+			e->fw_class.time_low, e->fw_class.time_mid, e->fw_class.time_hi_and_version,
+			e->fw_class.clock_seq_hi_and_reserved, e->fw_class.clock_seq_low, e->fw_class.node[0],
+			e->fw_class.node[1], e->fw_class.node[2], e->fw_class.node[3], e->fw_class.node[4],
+			e->fw_class.node[5]);
+
 		kprintf("ESRT[%d]:\n", i);
 		kprintf("  Fw Type: 0x%08x\n", e->fw_type);
+		kprintf("  Fw Ckass: %s\n", fw_class);
 		kprintf("  Fw Version: 0x%08x\n", e->fw_version);
 		kprintf("  Lowest Supported Fw Version: 0x%08x\n", e->lowest_supported_fw_version);
 		kprintf("  Capsule Flags: 0x%08x\n", e->capsule_flags);
@@ -519,13 +576,9 @@ get_table_length(enum efi_table_type type, size_t *table_len, void **taddr)
 			return (error);
 
 		buf = kmalloc(len, M_TEMP, M_WAITOK);
-		//Temporary solution - maybe copyout instead of physcopyout
-		//error = physcopyout((vm_paddr_t)esrt, buf, len);
-		error = 0;
-
+		error = physcopyout((vm_paddr_t)esrt, buf, len);
 
 		if (error != 0) {
-			//Temporary solution
 			kfree(buf, M_TEMP);
 			return (error);
 		}
@@ -533,7 +586,6 @@ get_table_length(enum efi_table_type type, size_t *table_len, void **taddr)
 		/* Check ESRT version */
 		if (((struct efi_esrt_table *)buf)->fw_resource_version !=
 		    ESRT_FIRMWARE_RESOURCE_VERSION) {
-			//Temporary solution
 			kfree(buf, M_TEMP);
 			return (ENODEV);
 		}
@@ -554,36 +606,9 @@ get_table_length(enum efi_table_type type, size_t *table_len, void **taddr)
 		kfree(buf, M_TEMP);
 		return (0);
 	}
-	case TYPE_PROP:
+	default:
 	{
-		struct uuid uuid = EFI_PROPERTIES_TABLE;
-		struct efi_prop_table *prop;
-		size_t len = sizeof(*prop);
-		uint32_t prop_len;
-		int error;
-		void *buf;
-
-		error = efi_get_table(&uuid, (void **)&prop);
-		if (error != 0)
-			return (error);
-
-		buf = kmalloc(len, M_TEMP, M_WAITOK);
-		//error = physcopyout((vm_paddr_t)prop, buf, len);
-		if (error != 0) {
-			kfree(buf, M_TEMP);
-			return (error);
-		}
-
-		prop_len = ((struct efi_prop_table *)buf)->length;
-		if (prop_len > EFI_TABLE_ALLOC_MAX) {
-			kfree(buf, M_TEMP);
-			return (ENOMEM);
-		}
-		*table_len = prop_len;
-
-		if (taddr != NULL)
-			*taddr = prop;
-		kfree(buf, M_TEMP);
+		kprintf("Incorrect table type\n");
 		return (0);
 	}
 	}
@@ -597,8 +622,7 @@ efi_copy_table(struct uuid *uuid, void **buf, size_t buf_len, size_t *table_len)
 		struct uuid uuid;
 		enum efi_table_type type;
 	} tables[] = {
-		{ EFI_TABLE_ESRT,       TYPE_ESRT },
-		{ EFI_PROPERTIES_TABLE, TYPE_PROP }
+		{ EFI_TABLE_ESRT,       TYPE_ESRT }
 	};
 	size_t table_idx;
 	void *taddr;
