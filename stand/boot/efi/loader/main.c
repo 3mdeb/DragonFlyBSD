@@ -358,7 +358,7 @@ main(int argc, CHAR16 *argv[])
 		 */
 		EFI_STATUS status = BS->AllocatePool(EfiRuntimeServicesData,
 								  esrt_size, &esrt_copy);
-		if (status != EFI_SUCCESS){
+		if (status == EFI_SUCCESS){
 			memcpy(esrt_copy, esrt, esrt_size);
 			efi_set_table(&esrt_guid, esrt_copy);
 		}else{

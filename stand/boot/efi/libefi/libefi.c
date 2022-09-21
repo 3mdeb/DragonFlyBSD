@@ -48,7 +48,7 @@ efi_get_table(EFI_GUID *tbl)
 	return (NULL);
 }
 
-static void
+void
 efi_set_table(EFI_GUID *tbl, void *value)
 {
 	EFI_GUID *id;
