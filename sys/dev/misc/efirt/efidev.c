@@ -78,10 +78,12 @@ efidev_ioctl(struct dev_ioctl_args *ap)
 	switch (cmd) {
 	case EFIIOC_GET_TABLE:
 	{
+		kprintf("efidev_ioctl\n");
 		struct efi_get_table_ioc *egtioc =
 		    (struct efi_get_table_ioc *)addr;
 
 		error = efi_get_table(&egtioc->uuid, &egtioc->ptr);
+		kprintf("ef_get_table result: %d", error);
 		break;
 	}
 	case EFIIOC_GET_TIME:

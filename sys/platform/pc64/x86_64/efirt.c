@@ -551,10 +551,12 @@ efi_get_table(struct uuid *uuid, void **ptr)
 	while (count--) {
 		if (!bcmp(&ct->ct_uuid, uuid, sizeof(*uuid))) {
 			*ptr = (void *)PHYS_TO_DMAP(ct->ct_data);
+			kprintf("!!! EFI_GET_TABLE: 0x%p\n", ptr);
 			return (0);
 		}
 		ct++;
 	}
+	kprintf("!!! EFI_GET_TABLE - enoent: 0x%p\n", ptr);
 	return (ENOENT);
 }
 

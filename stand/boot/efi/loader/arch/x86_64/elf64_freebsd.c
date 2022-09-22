@@ -44,9 +44,6 @@
 
 #include "loader_efi.h"
 
-#define	EFI_TABLE_ESRT					\
-	{0xb122a263,0x3661,0x4f68,{0x99,0x29,0x78,0xf8,0xb0,0xd6,0x21,0x80}}
-
 static EFI_GUID acpi_guid = ACPI_TABLE_GUID;
 static EFI_GUID acpi20_guid = EFI_ACPI_TABLE_GUID;
 

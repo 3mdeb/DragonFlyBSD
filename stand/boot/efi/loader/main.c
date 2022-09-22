@@ -34,6 +34,7 @@
 #include <string.h>
 #include <setjmp.h>
 
+#include <sys/efi.h>
 #include <efi.h>
 #include <efilib.h>
 
@@ -51,9 +52,6 @@ extern char bootprog_maker[];
 
 struct arch_switch archsw;	/* MI/MD interface boundary */
 
-#define	EFI_TABLE_ESRT					\
-	{0xb122a263,0x3661,0x4f68,{0x99,0x29,0x78,0xf8,0xb0,0xd6,0x21,0x80}}
- 
 EFI_GUID acpi = ACPI_TABLE_GUID;
 EFI_GUID acpi20 = EFI_ACPI_TABLE_GUID;
 EFI_GUID devid = DEVICE_PATH_PROTOCOL;
@@ -188,7 +186,39 @@ out:
 	free(hin);
 	return retval;
 }
+/*
+struct efi_esrt_table {
+	uint32_t	fw_resource_count;
+	uint32_t	fw_resource_count_max;
+	uint64_t	fw_resource_version;
+	uint8_t		entries[];
+};
 
+struct efi_esrt_entry_v1 {
+	struct uuid	fw_class;
+	uint32_t 	fw_type;
+	uint32_t	fw_version;
+	uint32_t	lowest_supported_fw_version;
+	uint32_t	capsule_flags;
+	uint32_t	last_attempt_version;
+	uint32_t	last_attempt_status;
+};
+
+static void
+efi_set_table(EFI_GUID *tbl, void *value)
+{
+	EFI_GUID *id;
+	unsigned int i;
+
+	for (i = 0; i < ST->NumberOfTableEntries; i++) {
+		id = &ST->ConfigurationTable[i].VendorGuid;
+		if (!memcmp(id, tbl, sizeof(EFI_GUID))) {
+			    ST->ConfigurationTable[i].VendorTable = value;
+			        return;
+		}
+	}
+}
+*/
 EFI_STATUS
 main(int argc, CHAR16 *argv[])
 {
@@ -197,7 +227,7 @@ main(int argc, CHAR16 *argv[])
 	EFI_GUID *guid;
 	int i, j, vargood, unit, howto;
 	struct devsw *dev;
-	struct efi_esrt_table *esrt;
+	//struct efi_esrt_table *esrt;
 	uint64_t pool_guid;
 	UINTN k;
 	int has_kbd;
@@ -344,6 +374,7 @@ main(int argc, CHAR16 *argv[])
 	printf("%s, Revision %s\n", bootprog_name, bootprog_rev);
 	printf("(%s, %s)\n", bootprog_maker, bootprog_date);
 
+	struct efi_esrt_table *esrt;
 	esrt = efi_get_table(&esrt_guid);
 
 	if (esrt != NULL) {
