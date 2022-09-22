@@ -180,6 +180,7 @@ typedef union {
 // The EFI memory allocation functions work in units of EFI_PAGEs that are
 // 4KB. This should in no way be confused with the page size of the processor.
 // An EFI_PAGE is just the quanta of memory in EFI.
+//
 
 /* EFI_PAGE_SIZE and EFI_PAGE_MASK also are defined in sys/sys/efi.h */
 #ifdef EFI_PAGE_SIZE
