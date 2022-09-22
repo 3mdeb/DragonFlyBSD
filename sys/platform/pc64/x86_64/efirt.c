@@ -46,8 +46,6 @@
 #include <sys/thread.h>
 #include <sys/globaldata.h>
 
-//#include <stdlib.h>
-
 #include <vm/vm.h>
 #include <vm/pmap.h>
 #include <vm/vm_map.h>
@@ -72,9 +70,6 @@
 static struct efi_systbl *efi_systbl;
 static struct efi_cfgtbl *efi_cfgtbl;
 static struct efi_rt *efi_runtime;
-//static struct efi_esrt_table *esrt;
-
-//static uuid_t esrt_guid = EFI_TABLE_ESRT;
 
 static int efi_status2err[25] = {
 	0,		/* EFI_SUCCESS */
@@ -431,7 +426,6 @@ efi_init(void)
 	struct efi_md *map;
 	caddr_t kmdp;
 	size_t efisz;
-	//struct efi_esrt_table *esrt = NULL;
 
 	lockinit(&efi_lock, "efi", 0, LK_CANRECURSE);
 	lockinit(&resettodr_lock, "efitodr", 0, LK_CANRECURSE);
@@ -545,18 +539,15 @@ efi_get_table(struct uuid *uuid, void **ptr)
 	u_long count;
 	if (efi_cfgtbl == NULL)
 		return (ENXIO);
-
 	count = efi_systbl->st_entries;
 	ct = efi_cfgtbl;
 	while (count--) {
 		if (!bcmp(&ct->ct_uuid, uuid, sizeof(*uuid))) {
 			*ptr = (void *)PHYS_TO_DMAP(ct->ct_data);
-			kprintf("!!! EFI_GET_TABLE: 0x%p\n", ptr);
 			return (0);
 		}
 		ct++;
 	}
-	kprintf("!!! EFI_GET_TABLE - enoent: 0x%p\n", ptr);
 	return (ENOENT);
 }
 
