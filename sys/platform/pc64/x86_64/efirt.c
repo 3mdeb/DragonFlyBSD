@@ -67,6 +67,14 @@
 
 #define MAX_STR 128
 
+/* Using EFI_TABLE_ESRT macro from sys/sys/efi.h generate -Wmissing-braces error */
+#ifdef EFI_TABLE_ESRT
+#undef EFI_TABLE_ESRT
+#endif
+
+#define	EFI_TABLE_ESRT					\
+		{0xb122a263,0x3661,0x4f68,0x99,0x29,{0x78,0xf8,0xb0,0xd6,0x21,0x80}}
+
 static struct efi_systbl *efi_systbl;
 static struct efi_cfgtbl *efi_cfgtbl;
 static struct efi_rt *efi_runtime;
