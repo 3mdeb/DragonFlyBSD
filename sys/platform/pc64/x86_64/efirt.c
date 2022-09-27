@@ -501,7 +501,6 @@ efi_get_table(struct uuid *uuid, void **ptr)
 	if (efi_cfgtbl == NULL)
 		return (ENXIO);
 	count = efi_systbl->st_entries;
-	kprintf("efi_systbl->st_entries = %ld\n", count);
 	ct = efi_cfgtbl;
 	while (count--) {
 		if (!bcmp(&ct->ct_uuid, uuid, sizeof(*uuid))) {
