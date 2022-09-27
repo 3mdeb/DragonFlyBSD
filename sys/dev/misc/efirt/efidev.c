@@ -80,6 +80,12 @@ efidev_ioctl(struct dev_ioctl_args *ap)
 			(struct efi_get_table_ioc *)addr;
 
 		error = efi_get_table(&egtioc->uuid, &egtioc->ptr);
+
+		struct efi_esrt_table *esrt = NULL;
+		esrt = egtioc->ptr;
+
+		kprintf("esrt->fw_resource_count = %d\n", esrt->fw_resource_count);
+
 		break;
 	}
 	case EFIIOC_GET_TIME:
@@ -87,6 +93,7 @@ efidev_ioctl(struct dev_ioctl_args *ap)
 		struct efi_tm *tm = (struct efi_tm *)addr;
 
 		error = efi_get_time(tm);
+
 		break;
 	}
 	case EFIIOC_SET_TIME:
