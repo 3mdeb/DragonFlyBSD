@@ -78,23 +78,8 @@ efidev_ioctl(struct dev_ioctl_args *ap)
 	{
 		struct efi_get_table_ioc *egtioc =
 			(struct efi_get_table_ioc *)addr;
-		void *buf = NULL;
 
-		error = efi_copy_table(&egtioc->uuid, egtioc->ptr ? &buf : NULL,
-				egtioc->buf_len, &egtioc->table_len);
-
-		if (error != 0 || egtioc->ptr == NULL)
-			break;
-
-		if (egtioc->buf_len < egtioc->table_len) {
-			error = EINVAL;
-			kfree(buf, M_TEMP);
-			break;
-		}
-
-		error = copyout(buf, egtioc->ptr, egtioc->buf_len);
-		kfree(buf, M_TEMP);
-
+		error = efi_get_table(&egtioc->uuid, &egtioc->ptr);
 		break;
 	}
 	case EFIIOC_GET_TIME:
