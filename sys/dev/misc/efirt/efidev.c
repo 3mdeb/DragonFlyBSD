@@ -78,6 +78,8 @@ efidev_ioctl(struct dev_ioctl_args *ap)
 	{
 		struct efi_get_table_ioc *egtioc =
 			(struct efi_get_table_ioc *)addr;
+		
+		void *data;
 
 		error = efi_get_table(&egtioc->uuid, &egtioc->ptr);
 
@@ -87,8 +89,11 @@ efidev_ioctl(struct dev_ioctl_args *ap)
 		kprintf("IOCTL: esrt->fw_resource_count = %d\n", esrt->fw_resource_count);
 
 		egtioc->table_len = sizeof(*esrt)+ (sizeof(struct efi_esrt_entry_v1) * esrt->fw_resource_count);
+		data = kmalloc(egtioc->table_len, M_TEMP, M_WAITOK);
+
 		kprintf("table_len = %ln\n", &egtioc->table_len);
 
+		error = copyout(data, &egtioc->ptr, egtioc->table_len);
 		break;
 	}
 	case EFIIOC_GET_TIME:
