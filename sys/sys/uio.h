@@ -78,9 +78,6 @@ int	uioread (int, struct uio *, struct vm_object *, int *);
 int	iovec_copyin(const struct iovec *, struct iovec **, struct iovec *,
 			    int, size_t *);
 
-//int 	physcopyin(void *src, vm_paddr_t dst, size_t len);
-//int 	physcopyout(vm_paddr_t src, void *dst, size_t len);
-
 #ifdef MALLOC_DECLARE
 MALLOC_DECLARE(M_IOV);	/* only if <sys/malloc.h> included before! */
 #endif
@@ -111,8 +108,5 @@ ssize_t	pwritev(int, const struct iovec *, int, off_t);
 #endif
 __END_DECLS
 #endif /* !_KERNEL */
-
-int 	physcopyin(void *src, vm_paddr_t dst, size_t len);
-int 	physcopyout(vm_paddr_t src, void *dst, size_t len);
 
 #endif /* !_SYS_UIO_H_ */

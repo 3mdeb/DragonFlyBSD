@@ -147,8 +147,6 @@ struct efi_prop_table {
 
 struct efi_rt {
 	struct efi_tblhdr rt_hdr;
-	//efi_status	(*get_table)(struct uuid *, void **) EFIABI;
-	//efi_status	(*copy_table)(struct uuid *, void **, size_t, size_t *) EFIABI;
 	efi_status	(*rt_gettime)(struct efi_tm *, struct efi_tmcap *)
 				EFIABI;
 	efi_status	(*rt_settime)(struct efi_tm *)
