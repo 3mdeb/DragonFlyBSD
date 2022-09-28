@@ -26,9 +26,7 @@
 #include <sys/cdefs.h>
 
 #include <sys/types.h>
-//#include <dev/efi/efi.h>
 #include <sys/efi.h>
-//#include <dev/efi/efiio.h>
 #include <sys/efiio.h>
 #include <sys/ioctl.h>
 #include <sys/param.h>
@@ -53,13 +51,13 @@
 #define	EFI_TABLE_ESRT					\
 			{0xb122a263,0x3661,0x4f68,0x99,0x29,{0x78,0xf8,0xb0,0xd6,0x21,0x80}}
 
-static void efi_table_print_esrt(const void *data);
+void efi_table_print_esrt(void *data);
 static void usage(void);
 static void fail(const char msg[]);
 
 struct efi_table_op {
 	char name[TABLE_MAX_LEN];
-	void (*parse) (const void *);
+	void (*parse) (void *);
 	struct uuid uuid;
 };
 
@@ -163,11 +161,11 @@ main(int argc, char **argv)
 	return (rc);
 }
 
-static void
-efi_table_print_esrt(const void *data)
+void
+efi_table_print_esrt(void *data)
 {
-	const struct efi_esrt_table *esrt = data;
-	const struct efi_esrt_entry_v1 *esre = (void *)esrt->entries;
+	struct efi_esrt_table *esrt = data;
+	struct efi_esrt_entry_v1 *esre = (void *)esrt->entries;
 
 	printf("ESRT FwResourceCount = %d\n", esrt->fw_resource_count);
 
