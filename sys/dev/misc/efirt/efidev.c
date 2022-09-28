@@ -79,8 +79,6 @@ efidev_ioctl(struct dev_ioctl_args *ap)
 		struct efi_get_table_ioc *egtioc =
 			(struct efi_get_table_ioc *)addr;
 		
-		void *data;
-		
 		kprintf("ioctl call\n");
 
 		error = efi_get_table(&egtioc->uuid, &egtioc->ptr);
@@ -89,9 +87,6 @@ efidev_ioctl(struct dev_ioctl_args *ap)
 		esrt = egtioc->ptr;
 
 		egtioc->table_len = sizeof(*esrt)+ (sizeof(struct efi_esrt_entry_v1) * esrt->fw_resource_count);
-		
-
-
 
 		if (egtioc->ptr == NULL){
 			kprintf("ptr null\n");
@@ -107,13 +102,8 @@ efidev_ioctl(struct dev_ioctl_args *ap)
 			kprintf("buf_len: %ld / table_len: %ld\n", egtioc->buf_len, egtioc->table_len);
 		}
 
-
-
-
-		data = kmalloc(egtioc->table_len, M_TEMP, M_WAITOK);
-
 		kprintf("error before copyout: %d\n",error);
-		error = copyout(data, egtioc->ptr, 1024);
+		error = copyout(esrt, egtioc->ptr, egtioc->buf_len);
 		kprintf("error after copyout: %d\n",error);
 		break;
 	}
