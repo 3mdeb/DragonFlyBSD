@@ -63,10 +63,6 @@
 #include <machine/smp.h>
 #include <machine/vmparam.h>
 
-#define EFI_TABLE_ALLOC_MAX 0x800000
-
-#define MAX_STR 128
-
 /* Using EFI_TABLE_ESRT macro from sys/sys/efi.h generate -Wmissing-braces error */
 #ifdef EFI_TABLE_ESRT
 #undef EFI_TABLE_ESRT
@@ -440,42 +436,6 @@ efi_init(void)
 		efi_destroy_1t1_map();
 		return (ENXIO);
 	}
-
-	int error;
-
-	struct efi_esrt_table *esrt = NULL;
-	struct efi_esrt_entry_v1 *esrt_entries;
-	struct uuid uuid_s = EFI_TABLE_ESRT;
-	
-	error = efi_get_table(&uuid_s, (void **)&esrt);
-
-	kprintf("esrt->fw_resource_count = %d\n", esrt->fw_resource_count);
-	kprintf("esrt->fw_resource_count_max = %d\n", esrt->fw_resource_count_max);
-	kprintf("esrt->fw_resource_version = %ld\n", esrt->fw_resource_version);
-
-	esrt_entries = (struct efi_esrt_entry_v1 *) esrt->entries;
-
-	for (int i = 0; i < esrt->fw_resource_count; ++i) {
-		const struct efi_esrt_entry_v1 *e = &esrt_entries[i];
-
-		char fw_class[MAX_STR];
-
-		ksprintf(fw_class, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-			e->fw_class.time_low, e->fw_class.time_mid, e->fw_class.time_hi_and_version,
-			e->fw_class.clock_seq_hi_and_reserved, e->fw_class.clock_seq_low, e->fw_class.node[0],
-			e->fw_class.node[1], e->fw_class.node[2], e->fw_class.node[3], e->fw_class.node[4],
-			e->fw_class.node[5]);
-
-		kprintf("ESRT[%d]:\n", i);
-		kprintf("  Fw Type: 0x%08x\n", e->fw_type);
-		kprintf("  Fw Ckass: %s\n", fw_class);
-		kprintf("  Fw Version: 0x%08x\n", e->fw_version);
-		kprintf("  Lowest Supported Fw Version: 0x%08x\n", e->lowest_supported_fw_version);
-		kprintf("  Capsule Flags: 0x%08x\n", e->capsule_flags);
-		kprintf("  Last Attempt Version: 0x%08x\n", e->last_attempt_version);
-		kprintf("  Last Attempt Status: 0x%08x\n", e->last_attempt_status);
-	}
-	
 
 	return (0);
 }
