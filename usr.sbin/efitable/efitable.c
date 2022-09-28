@@ -146,28 +146,19 @@ main(int argc, char **argv)
 	if (efi_fd < 0)
 		fail("/dev/efi");
 
-	printf("table.ptr: %p\n", table.ptr);
 	table.uuid = efi_table_ops[efi_idx].uuid;
 	if (ioctl(efi_fd, EFIIOC_GET_TABLE, &table) == -1){
-		printf("ioctl error\n");
-		exit(1);
+		fail(NULL);
 	}
-	printf("OK: first ioctl\n");
 
-	printf("table.table_len: %ld\n", table.table_len);
 	table.ptr = malloc(table.table_len);
-	printf("table.ptr: %p\n", table.ptr);
-
 	table.buf_len = table.table_len;
 
 	if (ioctl(efi_fd, EFIIOC_GET_TABLE, &table) == -1){
-		printf("ioctl second error\n");
-		exit(1);
+		fail(NULL);
 	}
 	close(efi_fd);
 	
-	printf("second table.ptr: %p\n", table.ptr);
-
 	efi_table_ops[efi_idx].parse(table.ptr);
 	return (rc);
 }
