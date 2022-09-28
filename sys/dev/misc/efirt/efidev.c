@@ -83,25 +83,23 @@ efidev_ioctl(struct dev_ioctl_args *ap)
 		error = efi_get_table(&egtioc->uuid, (void **)&esrt);
 
 		if(error != 0)
-			goto gt_out;
+			break;
 
 		egtioc->table_len = sizeof(*esrt)+ (sizeof(struct efi_esrt_entry_v1) * esrt->fw_resource_count);
 
 		/* Return table lenght to userspace */
 		if(egtioc->ptr == NULL){
-			error = EINVAL;
-			goto gt_out;
+			break;
 		}
 
 		/* Refuse to copy only part of the table */
 		if(egtioc->buf_len < egtioc->table_len){
-			goto gt_out;
+			error = EINVAL;
+			break;
 		}
 
 		error = copyout(esrt, egtioc->ptr, egtioc->buf_len);
 
-gt_out:
-		kfree(esrt, M_TEMP);
 		break;
 	}
 	case EFIIOC_GET_TIME:
