@@ -102,7 +102,6 @@ efidev_ioctl(struct dev_ioctl_args *ap)
 		struct efi_tm *tm = (struct efi_tm *)addr;
 
 		error = efi_get_time(tm);
-
 		break;
 	}
 	case EFIIOC_SET_TIME:
