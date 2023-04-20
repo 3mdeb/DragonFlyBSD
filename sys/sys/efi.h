@@ -39,6 +39,8 @@
 	{0x8868e871,0xe4f1,0x11d3,0xbc,0x22,{0x00,0x80,0xc7,0x3c,0x88,0x81}}
 #define	EFI_TABLE_SAL				\
 	{0xeb9d2d32,0x2d88,0x11d3,0x9a,0x16,{0x00,0x90,0x27,0x3f,0xc1,0x4d}}
+#define	EFI_TABLE_ESRT				\
+	{0xb122a263,0x3661,0x4f68,0x99,0x29,{0x78,0xf8,0xb0,0xd6,0x21,0x80}}
 
 enum efi_reset {
 	EFI_RESET_COLD,
@@ -114,6 +116,25 @@ struct efi_tblhdr {
 	uint32_t	th_hdrsz;
 	uint32_t	th_crc32;
 	uint32_t	__res;
+};
+
+#define ESRT_FIRMWARE_RESOURCE_VERSION 1
+
+struct efi_esrt_table {
+	uint32_t	fw_resource_count;
+	uint32_t	fw_resource_count_max;
+	uint64_t	fw_resource_version;
+	uint8_t		entries[];
+};
+
+struct efi_esrt_entry_v1 {
+	struct uuid	fw_class;
+	uint32_t 	fw_type;
+	uint32_t	fw_version;
+	uint32_t	lowest_supported_fw_version;
+	uint32_t	capsule_flags;
+	uint32_t	last_attempt_version;
+	uint32_t	last_attempt_status;
 };
 
 #define EFIABI	__attribute__((ms_abi))

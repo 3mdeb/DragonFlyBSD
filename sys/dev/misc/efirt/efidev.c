@@ -78,8 +78,26 @@ efidev_ioctl(struct dev_ioctl_args *ap)
 	{
 		struct efi_get_table_ioc *egtioc =
 		    (struct efi_get_table_ioc *)addr;
+		struct efi_esrt_table *esrt = NULL;
 
-		error = efi_get_table(&egtioc->uuid, &egtioc->ptr);
+		error = efi_get_table(&egtioc->uuid, (void **)&esrt);
+		if (error != 0)
+			break;
+
+		egtioc->table_len = sizeof(*esrt) +
+		    sizeof(struct efi_esrt_entry_v1) * esrt->fw_resource_count;
+
+		/* Return table lenght to userspace */
+		if (egtioc->ptr == NULL)
+			break;
+
+		/* Refuse to copy only part of the table */
+		if (egtioc->buf_len < egtioc->table_len) {
+			error = EINVAL;
+			break;
+		}
+
+		error = copyout(esrt, egtioc->ptr, egtioc->buf_len);
 		break;
 	}
 	case EFIIOC_GET_TIME:
